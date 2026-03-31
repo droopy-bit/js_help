@@ -38,6 +38,13 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   const navEl = document.getElementById('nav-' + name);
   if (navEl) navEl.classList.add('active');
+  if (name === 'search') {
+    setTimeout(() => {
+      const el = document.getElementById('smart-search');
+      if (el) el.focus();
+      doSearch();
+    }, 50);
+  }
 }
 
 /* ── Назад до сітки тем ── */
@@ -259,8 +266,11 @@ function smartSearch(query) {
 }
 
 function doSearch() {
-  const q = document.getElementById('smart-search').value.trim();
+  const el = document.getElementById('smart-search');
+  if (!el) return;
+  const q = el.value.trim();
   const resultsEl = document.getElementById('search-results');
+  if (!resultsEl) return;
 
   if (!q) {
     resultsEl.innerHTML = '<div class="search-empty">Введи питання щоб знайти відповідь...</div>';
