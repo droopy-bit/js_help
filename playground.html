@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JS Playground</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a1a;
+      color: #e8e8e8;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #111;
+      border-bottom: 1px solid #2a2a2a;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 15px;
+      font-weight: 500;
+      color: #e8e8e8;
+    }
+
+    .header-actions { display: flex; gap: 8px; margin-left: auto; align-items: center; }
+
+    .btn {
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-run {
+      background: #22c55e;
+      color: #fff;
+    }
+    .btn-run:hover { background: #16a34a; }
+    .btn-run:active { transform: scale(0.97); }
+
+    .btn-clear {
+      background: transparent;
+      color: #888;
+      border: 1px solid #333;
+    }
+    .btn-clear:hover { color: #ccc; border-color: #555; }
+
+    .hint {
+      font-size: 12px;
+      color: #555;
+    }
+
+    /* ── Main layout ── */
+    .workspace {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Editor pane ── */
+    .editor-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #2a2a2a;
+      min-width: 0;
+    }
+
+    .pane-label {
+      font-size: 11px;
+      color: #555;
+      padding: 6px 14px;
+      background: #111;
+      border-bottom: 1px solid #2a2a2a;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      flex-shrink: 0;
+    }
+
+    textarea#editor {
+      flex: 1;
+      background: #1a1a1a;
+      color: #e8e8e8;
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      border: none;
+      outline: none;
+      resize: none;
+      padding: 16px;
+      tab-size: 2;
+      width: 100%;
+    }
+
+    /* ── Console pane ── */
+    .console-pane {
+      width: 45%;
+      display: flex;
+      flex-direction: column;
+      min-width: 280px;
+      flex-shrink: 0;
+    }
+
+    .console-header {
+      font-size: 11px;
+      color: #555;
+      padding: 6px 14px;
+      background: #111;
+      border-bottom: 1px solid #2a2a2a;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .console-clear {
+      margin-left: auto;
+      font-size: 11px;
+      color: #555;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: #555;
+      transition: color 0.15s;
+    }
+    .console-clear:hover { color: #aaa; }
+
+    #console-output {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      background: #0d0d0d;
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .line { padding: 1px 0; white-space: pre-wrap; word-break: break-all; display: flex; gap: 8px; }
+    .line-icon { flex-shrink: 0; width: 14px; color: #555; }
+    .line.log   .line-text { color: #e8e8e8; }
+    .line.warn  .line-text { color: #fbbf24; }
+    .line.warn  .line-icon { color: #fbbf24; }
+    .line.error .line-text { color: #f87171; }
+    .line.error .line-icon { color: #f87171; }
+    .line.info  .line-text { color: #60a5fa; }
+    .line.info  .line-icon { color: #60a5fa; }
+    .line.result .line-text { color: #a78bfa; }
+    .line.result .line-icon { color: #a78bfa; }
+
+    .run-separator {
+      border: none;
+      border-top: 1px solid #222;
+      margin: 8px 0;
+    }
+
+    .empty-hint {
+      color: #444;
+      font-size: 13px;
+      padding: 8px 0;
+    }
+
+    /* ── Resize handle ── */
+    .resizer {
+      width: 4px;
+      background: #2a2a2a;
+      cursor: col-resize;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .resizer:hover { background: #444; }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .workspace { flex-direction: column; }
+      .editor-pane { border-right: none; border-bottom: 1px solid #2a2a2a; }
+      .console-pane { width: 100%; min-width: 0; }
+      .resizer { display: none; }
+      .hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ JS Playground</h1>
+  <div class="header-actions">
+    <span class="hint">Shift+Enter — запуск</span>
+    <button class="btn btn-clear" onclick="clearAll()">Очистити все</button>
+    <button class="btn btn-run" onclick="runCode()">▶ Run</button>
+  </div>
+</header>
+
+<div class="workspace">
+  <div class="editor-pane">
+    <div class="pane-label">JavaScript</div>
+    <textarea id="editor" spellcheck="false" placeholder="// Пиши код тут...
+// Shift+Enter або кнопка Run для запуску
+
+const name = 'World';
+console.log('Hello, ' + name + '!');"></textarea>
+  </div>
+
+  <div class="resizer" id="resizer"></div>
+
+  <div class="console-pane">
+    <div class="console-header">
+      Console
+      <button class="console-clear" onclick="clearConsole()">очистити</button>
+    </div>
+    <div id="console-output">
+      <div class="empty-hint">// Результат з'явиться тут...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const editor = document.getElementById('editor');
+  const output = document.getElementById('console-output');
+  let runCount = 0;
+
+  /* ── Tab → 2 пробіли ── */
+  editor.addEventListener('keydown', e => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = editor.selectionStart;
+      const end = editor.selectionEnd;
+      editor.value = editor.value.substring(0, s) + '  ' + editor.value.substring(end);
+      editor.selectionStart = editor.selectionEnd = s + 2;
+    }
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      runCode();
+    }
+  });
+
+  /* ── Форматування значень ── */
+  function fmt(val) {
+    if (val === null) return 'null';
+    if (val === undefined) return 'undefined';
+    if (typeof val === 'string') return `'${val}'`;
+    if (typeof val === 'function') return `[Function: ${val.name || 'anonymous'}]`;
+    if (val instanceof Error) return `${val.name}: ${val.message}`;
+    if (Array.isArray(val)) {
+      if (val.length === 0) return '[]';
+      return `[${val.map(fmt).join(', ')}]`;
+    }
+    if (typeof val === 'object') {
+      try {
+        const entries = Object.entries(val).map(([k,v]) => `${k}: ${fmt(v)}`).join(', ');
+        return `{ ${entries} }`;
+      } catch { return String(val); }
+    }
+    return String(val);
+  }
+
+  /* ── Додати рядок в консоль ── */
+  function addLine(type, text, icon) {
+    const div = document.createElement('div');
+    div.className = 'line ' + type;
+    div.innerHTML = `<span class="line-icon">${icon}</span><span class="line-text">${escHtml(text)}</span>`;
+    output.appendChild(div);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ── Запуск ── */
+  function runCode() {
+    const code = editor.value.trim();
+    if (!code) return;
+
+    // Роздільник між запусками
+    if (runCount > 0) {
+      const hr = document.createElement('hr');
+      hr.className = 'run-separator';
+      output.appendChild(hr);
+    }
+    runCount++;
+
+    // Видаляємо empty-hint
+    const hint = output.querySelector('.empty-hint');
+    if (hint) hint.remove();
+
+    const lines = [];
+
+    // Перехоплення console
+    const orig = {
+      log:   console.log,
+      warn:  console.warn,
+      error: console.error,
+      info:  console.info,
+    };
+
+    console.log   = (...a) => { lines.push({ t:'log',   icon:'›', text: a.map(fmt).join(' ') }); orig.log(...a); };
+    console.warn  = (...a) => { lines.push({ t:'warn',  icon:'⚠', text: a.map(fmt).join(' ') }); orig.warn(...a); };
+    console.error = (...a) => { lines.push({ t:'error', icon:'✗', text: a.map(fmt).join(' ') }); orig.error(...a); };
+    console.info  = (...a) => { lines.push({ t:'info',  icon:'ℹ', text: a.map(fmt).join(' ') }); orig.info(...a); };
+
+    try {
+      const result = eval(code);
+      if (result !== undefined && lines.length === 0) {
+        lines.push({ t:'result', icon:'←', text: fmt(result) });
+      }
+    } catch(err) {
+      lines.push({ t:'error', icon:'✗', text: err.message });
+    }
+
+    // Відновлення console
+    Object.assign(console, orig);
+
+    if (lines.length === 0) {
+      lines.push({ t:'log', icon:'✓', text: 'Виконано (немає виводу)' });
+    }
+
+    lines.forEach(l => addLine(l.t, l.text, l.icon));
+    output.scrollTop = output.scrollHeight;
+  }
+
+  function clearConsole() {
+    output.innerHTML = '<div class="empty-hint">// Результат з\'явиться тут...</div>';
+    runCount = 0;
+  }
+
+  function clearEditor() {
+    editor.value = '';
+    editor.focus();
+  }
+
+  function clearAll() {
+    clearEditor();
+    clearConsole();
+  }
+
+  /* ── Resize панелей ── */
+  const resizer = document.getElementById('resizer');
+  const workspace = document.querySelector('.workspace');
+  let isResizing = false;
+
+  resizer.addEventListener('mousedown', e => {
+    isResizing = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!isResizing) return;
+    const rect = workspace.getBoundingClientRect();
+    const total = rect.width;
+    const editorWidth = e.clientX - rect.left;
+    const pct = Math.min(Math.max(editorWidth / total * 100, 25), 75);
+    document.querySelector('.editor-pane').style.flex = 'none';
+    document.querySelector('.editor-pane').style.width = pct + '%';
+    document.querySelector('.console-pane').style.width = (100 - pct) + '%';
+  });
+
+  document.addEventListener('mouseup', () => {
+    isResizing = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+
+  /* ── Читаємо код переданий зі шпаргалки ── */
+  const savedCode = localStorage.getItem('playground_code');
+  if (savedCode) {
+    editor.value = savedCode;
+    localStorage.removeItem('playground_code');
+  }
+
+</script>
+
+</body>
+</html>
