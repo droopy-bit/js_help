@@ -54,7 +54,7 @@ function backToCheatsheet() {
   document.getElementById('header-sub').textContent = 'Обери тему для вивчення';
 }
 
-/* ── Відкрити тему ── */
+/* ── Відкрити тему — список карточок ── */
 function openTopic(id) {
   const section = DATA.find(s => s.id === id);
   if (!section) return;
@@ -66,21 +66,21 @@ function openTopic(id) {
   let html = `<div class="detail-title">${ICONS[id] || '📌'} ${section.label}</div>`;
 
   section.cards.forEach((card, idx) => {
-    const codeId = `code-${id}-${idx}`;
+    const hasDeep = typeof DEEP !== 'undefined' && DEEP[id + '_' + idx];
     html += `
-      <div class="detail-card">
-        <div class="detail-card-title">${card.title}</div>
-        ${card.desc ? `<div class="detail-card-desc">${card.desc}</div>` : ''}
-        <div class="code-block" onclick="sendToPlayground('${codeId}')" title="Клікни щоб відкрити в Playground">
-          <pre id="${codeId}" data-code="${esc(card.code)}">${esc(card.code)}</pre>
-          <span class="code-hint">▶ Відкрити в Playground</span>
+      <div class="detail-card topic-card-item" onclick="openCard('${id}', ${idx})" style="cursor:pointer">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="detail-card-title">${card.title}</div>
+          <span style="font-size:12px;color:${hasDeep ? '#22c55e' : '#888'};flex-shrink:0;margin-left:8px">
+            ${hasDeep ? '📖 Детально →' : '→'}
+          </span>
         </div>
+        ${card.desc ? `<div class="detail-card-desc" style="margin-bottom:0">${card.desc}</div>` : ''}
       </div>`;
   });
 
   container.innerHTML = html;
 
-  // Показуємо detail, але nav залишається на cheatsheet
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-detail').classList.add('active');
   document.getElementById('page-detail').scrollTop = 0;
@@ -118,6 +118,87 @@ function sendToPlayground(codeId) {
   // Інакше — перезавантажуємо iframe (він сам прочитає localStorage)
   frame.src = 'playground.html';
   showToast('▶ Код відкрито в Playground!');
+}
+
+
+/* ── Глибока сторінка карточки ── */
+function openCard(sectionId, cardIdx) {
+  const section = DATA.find(s => s.id === sectionId);
+  if (!section) return;
+  const card = section.cards[cardIdx];
+  if (!card) return;
+
+  const deepKey = sectionId + '_' + cardIdx;
+  const deep = typeof DEEP !== 'undefined' ? DEEP[deepKey] : null;
+
+  const container = document.getElementById('detail-content');
+
+  let html = `
+    <div class="detail-title">${ICONS[sectionId] || '📌'} ${card.title}</div>
+    <div class="detail-card-desc" style="font-size:14px;line-height:1.8;margin-bottom:1.5rem;color:var(--text,#444)">
+      ${card.desc || ''}
+    </div>`;
+
+  if (deep) {
+    // Глибоке пояснення
+    html += `<div class="deep-explain">${deep.explain}</div>`;
+
+    // Приклади
+    deep.examples.forEach((ex, i) => {
+      const codeId = 'deep-' + sectionId + '-' + cardIdx + '-' + i;
+      html += `
+        <div class="deep-example">
+          <div class="deep-example-title">${i + 1}. ${ex.title}</div>
+          <div class="code-block" onclick="sendToPlayground('${codeId}')" title="Відкрити в Playground">
+            <pre id="${codeId}" data-code="${esc(ex.code)}">${esc(ex.code)}</pre>
+            <span class="code-hint">▶ Відкрити в Playground</span>
+          </div>
+        </div>`;
+    });
+  } else {
+    // Якщо глибокого контенту немає — показуємо базовий код
+    const codeId = 'base-' + sectionId + '-' + cardIdx;
+    html += `
+      <div class="deep-example">
+        <div class="deep-example-title">Приклад</div>
+        <div class="code-block" onclick="sendToPlayground('${codeId}')" title="Відкрити в Playground">
+          <pre id="${codeId}" data-code="${esc(card.code)}">${esc(card.code)}</pre>
+          <span class="code-hint">▶ Відкрити в Playground</span>
+        </div>
+      </div>`;
+  }
+
+  // Додаємо порівняння якщо є
+  const compare = typeof COMPARE !== 'undefined' ? COMPARE[deepKey] : null;
+  if (compare) {
+    html += `<div class="compare-block">
+      <div class="compare-title">⚖️ Порівняння методів</div>
+      <div class="compare-grid">`;
+
+    compare.items.forEach(item => {
+      const cmpId = 'cmp-' + deepKey + '-' + item.label.replace(/\W/g,'');
+      html += `
+        <div class="compare-card">
+          <div class="compare-method">${item.label}</div>
+          <div class="code-block" onclick="sendToPlayground('${cmpId}')" title="Відкрити в Playground">
+            <pre id="${cmpId}" data-code="${esc(item.code)}">${esc(item.code)}</pre>
+            <span class="code-hint">▶ Playground</span>
+          </div>
+          <div class="compare-pro">✓ ${item.pros}</div>
+          <div class="compare-con">✗ ${item.cons}</div>
+        </div>`;
+    });
+
+    html += `</div>
+      <div class="compare-winner">💡 ${compare.winner}</div>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-detail').classList.add('active');
+  document.getElementById('page-detail').scrollTop = 0;
+  document.getElementById('header-sub').textContent = card.title;
 }
 
 /* ── Сітка тем ── */

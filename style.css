@@ -61,8 +61,8 @@ header span { font-size: 13px; color: #888; margin-left: auto; }
   background: #fff; border: 1px solid #e8e8e8;
   border-radius: 12px; padding: 1rem 1.25rem;
 }
-.card-title { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; }
-.card-desc { font-size: 13px; color: #666; margin-bottom: 10px; line-height: 1.6; }
+.card-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; }
+.card-desc { font-size: 14px; color: #666; margin-bottom: 10px; line-height: 1.7; }
 
 /* code preview */
 pre {
@@ -104,7 +104,7 @@ pre {
   width: 100%;
   background: #1a1a1a; color: #e8e8e8;
   font-family: 'Fira Code','Cascadia Code','Consolas',monospace;
-  font-size: 12.5px; line-height: 1.65;
+  font-size: 14px; line-height: 1.65;
   border: none; outline: none;
   resize: vertical; padding: 12px 14px;
   min-height: 80px; tab-size: 2;
@@ -160,4 +160,72 @@ pre {
   .card-desc { color: #aaa; }
   .btn-reset { border-color: #444; }
   .empty { color: #666; }
+}
+
+/* ── Порівняння методів ── */
+.compare-block {
+  margin-top: 2rem;
+  border-top: 1px solid #e8e8e8;
+  padding-top: 1.5rem;
+}
+
+.compare-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 1rem;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.compare-card {
+  background: #f8f8f5;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.compare-method {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+  font-family: 'Fira Code', monospace;
+}
+
+.compare-pro {
+  font-size: 13px;
+  color: #16a34a;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.compare-con {
+  font-size: 13px;
+  color: #dc2626;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.compare-winner {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #15803d;
+  line-height: 1.6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .compare-block { border-color: #2a2a2a; }
+  .compare-title { color: #e8e8e8; }
+  .compare-card { background: #1a1a1a; border-color: #2a2a2a; }
+  .compare-method { color: #e8e8e8; }
+  .compare-winner { background: #0a1f0a; border-color: #1a4a1a; color: #4ade80; }
 }
