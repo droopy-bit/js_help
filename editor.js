@@ -147,3 +147,149 @@ function filterTopics() {
 
 /* ── Ініціалізація ── */
 renderTopics();
+
+/* ── Розумний пошук ── */
+
+// Синоніми і ключові слова для кожної карточки
+const KEYWORDS = {
+  // Масиви
+  'push': ['arrays'], 'pop': ['arrays'], 'shift': ['arrays'], 'unshift': ['arrays'],
+  'додати': ['arrays'], 'видалити': ['arrays'], 'масив': ['arrays'],
+  'indexOf': ['arrays', 'strings'], 'includes': ['arrays', 'strings'],
+  'split': ['arrays', 'strings'], 'join': ['arrays', 'strings'],
+  'at': ['arrays'], 'length': ['arrays', 'strings'],
+
+  // Об'єкти
+  'обєкт': ['objects'], "об'єкт": ['objects'], 'object': ['objects'],
+  'деструктур': ['objects'], 'клонувати': ['objects'], 'копіювати': ['objects'],
+  'spread': ['objects'], 'freeze': ['objects'], 'delete': ['objects'],
+  'keys': ['objects'], 'values': ['objects'], 'entries': ['objects'],
+  'посилання': ['objects'], 'reference': ['objects'],
+
+  // Функції
+  'функція': ['functions'], 'function': ['functions'], 'стрілкова': ['functions'],
+  'arrow': ['functions'], 'return': ['functions'], 'jsdoc': ['functions'],
+  'параметр': ['functions'], 'аргумент': ['functions'], 'замовчуванням': ['functions'],
+
+  // Цикли
+  'цикл': ['loops'], 'loop': ['loops'], 'for': ['loops'],
+  'перебрати': ['loops'], 'ітерація': ['loops'], 'повторити': ['loops'],
+
+  // Умови
+  'if': ['conditions'], 'else': ['conditions'], 'умова': ['conditions'],
+  'switch': ['conditions'], 'перевірити': ['conditions'],
+
+  // Рядки
+  'рядок': ['strings'], 'string': ['strings'], 'текст': ['strings'],
+  'toLowerCase': ['strings'], 'toUpperCase': ['strings'], 'replace': ['strings'],
+  'trim': ['strings'], 'substring': ['strings'], 'slice': ['strings'],
+  'startsWith': ['strings'], 'endsWith': ['strings'], 'символ': ['strings'],
+
+  // Числа
+  'число': ['numbers'], 'number': ['numbers'], 'округлити': ['numbers'],
+  'random': ['numbers'], 'випадков': ['numbers'], 'Math': ['numbers'],
+  'floor': ['numbers'], 'ceil': ['numbers'], 'parseInt': ['numbers'],
+
+  // Типи
+  'typeof': ['types'], 'тип': ['types'], 'boolean': ['types'],
+  'null': ['types'], 'undefined': ['types'], 'NaN': ['types'],
+  'конвертувати': ['types'], 'перетворити': ['types'],
+
+  // Змінні
+  'let': ['vars'], 'const': ['vars'], 'var': ['vars'],
+  'змінна': ['vars'], 'назва': ['vars'], 'camelCase': ['vars'],
+
+  // Advanced
+  'this': ['advanced'], 'call': ['advanced'], 'apply': ['advanced'],
+  'bind': ['advanced'], 'promise': ['advanced'], 'async': ['advanced'],
+  'await': ['advanced'], 'прототип': ['advanced'], 'prototype': ['advanced'],
+  'замикання': ['advanced'], 'closure': ['advanced'],
+};
+
+function smartSearch(query) {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+
+  const words = q.split(/\s+/);
+  const scores = {}; // sectionId -> score
+  const matchedCards = {}; // sectionId -> [cards]
+
+  DATA.forEach(section => {
+    section.cards.forEach((card, idx) => {
+      let score = 0;
+      const haystack = (card.title + ' ' + card.desc + ' ' + card.code).toLowerCase();
+
+      words.forEach(word => {
+        // Пряме входження в назву
+        if (card.title.toLowerCase().includes(word)) score += 10;
+        // Входження в опис
+        if (card.desc && card.desc.toLowerCase().includes(word)) score += 6;
+        // Входження в код
+        if (card.code.toLowerCase().includes(word)) score += 4;
+        // Входження в назву теми
+        if (section.label.toLowerCase().includes(word)) score += 3;
+        // Синоніми
+        Object.keys(KEYWORDS).forEach(kw => {
+          if (word.includes(kw) || kw.includes(word)) {
+            if (KEYWORDS[kw].includes(section.id)) score += 5;
+          }
+        });
+      });
+
+      if (score > 0) {
+        if (!matchedCards[section.id]) {
+          matchedCards[section.id] = [];
+          scores[section.id] = 0;
+        }
+        scores[section.id] += score;
+        matchedCards[section.id].push({ card, idx, score });
+      }
+    });
+  });
+
+  // Сортуємо секції за релевантністю
+  const result = Object.keys(scores)
+    .sort((a, b) => scores[b] - scores[a])
+    .map(id => ({
+      section: DATA.find(s => s.id === id),
+      cards: matchedCards[id].sort((a, b) => b.score - a.score).slice(0, 3)
+    }));
+
+  return result;
+}
+
+function doSearch() {
+  const q = document.getElementById('smart-search').value.trim();
+  const resultsEl = document.getElementById('search-results');
+
+  if (!q) {
+    resultsEl.innerHTML = '<div class="search-empty">Введи питання щоб знайти відповідь...</div>';
+    return;
+  }
+
+  const results = smartSearch(q);
+
+  if (!results.length) {
+    resultsEl.innerHTML = `<div class="search-empty">Нічого не знайдено по запиту "<b>${esc(q)}</b>"<br><br>Спробуй інакше, наприклад: "як додати елемент", "що таке this", "як перебрати масив"</div>`;
+    return;
+  }
+
+  let html = '';
+  results.forEach(({ section, cards }) => {
+    html += `<div class="search-section-label">${ICONS[section.id] || '📌'} ${section.label}</div>`;
+    cards.forEach(({ card, idx }) => {
+      const codeId = `sq-${section.id}-${idx}`;
+      html += `
+        <div class="detail-card">
+          <div class="detail-card-title">${card.title}</div>
+          ${card.desc ? `<div class="detail-card-desc">${card.desc}</div>` : ''}
+          <div class="code-block" onclick="sendToPlayground('${codeId}')" title="Відкрити в Playground">
+            <pre id="${codeId}" data-code="${esc(card.code)}">${esc(card.code)}</pre>
+            <span class="code-hint">▶ Відкрити в Playground</span>
+          </div>
+        </div>`;
+    });
+  });
+
+  resultsEl.innerHTML = html;
+}
